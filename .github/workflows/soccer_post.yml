@@ -2,10 +2,8 @@ name: Soccer Post
 
 on:
   schedule:
-    # Runs every 15 minutes (GitHub Actions minimum is 5 min, 15 is more reliable)
     - cron: '*/15 * * * *'
   workflow_dispatch:
-    # Manual "Run workflow" button in GitHub app on your phone
 
 jobs:
   post:
@@ -22,27 +20,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Restore cached Instagram session so we don't re-login every time
-      - name: Restore Instagram session
-        uses: actions/cache/restore@v4
-        with:
-          path: session.json
-          key: ig-session-${{ github.run_id }}
-          restore-keys: ig-session-
-
       - name: Post to Instagram
         env:
           IG_USERNAME: ${{ secrets.IG_USERNAME }}
           IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
+          IG_SESSION: ${{ secrets.IG_SESSION }}
           FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python post_once.py
-
-      # Save updated session for next run
-      - name: Save Instagram session
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: session.json
-          key: ig-session-${{ github.run_id }}
