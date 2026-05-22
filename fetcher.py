@@ -26,7 +26,7 @@ COMPETITIONS = {
 
 
 def _headers() -> dict:
-    key = os.getenv("FOOTBALL_DATA_API_KEY", "")
+    key = os.getenv("FOOTBALL_DATA_API_KEY", "").strip()
     return {"X-Auth-Token": key}
 
 
