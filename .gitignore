@@ -1,0 +1,9 @@
+.env
+session.json
+__pycache__/
+*.pyc
+*.pyo
+*.jpg
+*.png
+.venv/
+venv/
