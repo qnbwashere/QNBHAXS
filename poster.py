@@ -1,5 +1,6 @@
 """
-Handles Instagram login (with session caching) and photo posting.
+Handles Instagram session loading and photo posting.
+Uses IG_SESSION secret (pre-built session JSON) to avoid login challenges.
 """
 
 import json
@@ -7,7 +8,6 @@ import os
 from pathlib import Path
 
 from instagrapi import Client
-from instagrapi.exceptions import LoginRequired, TwoFactorRequired
 
 SESSION_FILE = Path("session.json")
 
@@ -19,46 +19,24 @@ def _build_client() -> Client:
 
 
 def login(username: str, password: str) -> Client:
-    """Return an authenticated instagrapi Client.
-    Prefers IG_SESSION env var (JSON string), then session.json file, then fresh login.
-    """
-    cl = _build_client()
-
-    # Try session from environment variable first (GitHub Actions secret)
+    """Return an authenticated Client using IG_SESSION secret (no login call)."""
     session_env = os.getenv("IG_SESSION", "").strip()
-    if session_env:
-        try:
-            cl.set_settings(json.loads(session_env))
-            cl.login(username, password)
-            cl.get_timeline_feed()
-            print("[poster] Logged in via IG_SESSION secret.")
-            return cl
-        except Exception as e:
-            print(f"[poster] IG_SESSION failed ({e}), trying other methods.")
-            cl = _build_client()
+    if not session_env:
+        raise RuntimeError(
+            "IG_SESSION secret is not set. "
+            "Follow the setup instructions to generate your session JSON."
+        )
 
-    # Try cached session file
-    if SESSION_FILE.exists():
-        try:
-            cl.set_settings(json.loads(SESSION_FILE.read_text()))
-            cl.login(username, password)
-            cl.get_timeline_feed()
-            print("[poster] Re-used cached session file.")
-            return cl
-        except Exception as e:
-            print(f"[poster] Session file failed ({e}), logging in fresh.")
-            cl = _build_client()
+    cl = _build_client()
+    cl.set_settings(json.loads(session_env))
 
-    # Fresh login
+    # Verify the session works without triggering a login
     try:
-        cl.login(username, password)
-    except TwoFactorRequired:
-        code = input("[poster] 2FA code: ").strip()
-        cl.login(username, password, verification_code=code)
-
-    SESSION_FILE.write_text(json.dumps(cl.get_settings()))
-    print("[poster] Logged in fresh, session saved.")
-    return cl
+        cl.get_timeline_feed()
+        print("[poster] Session loaded and verified.")
+        return cl
+    except Exception as e:
+        raise RuntimeError(f"[poster] Session invalid or expired: {e}")
 
 
 def post_photo(cl: Client, image_path: str, caption: str) -> str | None:
