@@ -1,0 +1,5 @@
+# Ignore legacy Instagram bot — not part of the Next.js web app
+*.py
+requirements.txt
+Procfile
+railway.toml
