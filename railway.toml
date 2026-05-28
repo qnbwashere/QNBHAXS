@@ -1,7 +1,8 @@
 [build]
 builder = "nixpacks"
+buildCommand = "pip install -r bot/requirements.txt"
 
 [deploy]
-startCommand = "python run.py"
+startCommand = "cd bot && python run.py"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 5
